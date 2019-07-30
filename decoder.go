@@ -6,6 +6,10 @@ import (
 	"io"
 )
 
+var _ MNSDecoder = new(aliMNSDecoder)
+var _ MNSDecoder = new(aliMNSDecoderErrResp)
+var _ MNSDecoder = new(batchOpDecoder)
+
 type MNSDecoder interface {
 	Decode(reader io.Reader, v interface{}) (err error)
 	DecodeError(bodyBytes []byte, resource string) (decodedError error, err error)
@@ -42,7 +46,6 @@ func (p *aliMNSDecoder) Decode(reader io.Reader, v interface{}) (err error) {
 func (p *aliMNSDecoder) DecodeError(bodyBytes []byte, resource string) (decodedError error, err error) {
 	bodyReader := bytes.NewReader(bodyBytes)
 	errResp := ErrorResponse{}
-
 	decoder := xml.NewDecoder(bodyReader)
 	err = decoder.Decode(&errResp)
 	if err == nil {
@@ -81,5 +84,33 @@ func (p *batchOpDecoder) DecodeError(bodyBytes []byte, resource string) (decoded
 	} else {
 		decodedError = ERR_MNS_BATCH_OP_FAIL.New()
 	}
+	return
+}
+
+type aliMNSDecoderErrResp struct {
+}
+
+func NewAliMNSDecoderErrResp() MNSDecoder {
+	return &aliMNSDecoderErrResp{}
+}
+
+func (p *aliMNSDecoderErrResp) Test() bool {
+	return false
+}
+
+func (p *aliMNSDecoderErrResp) Decode(reader io.Reader, v interface{}) (err error) {
+	decoder := xml.NewDecoder(reader)
+	err = decoder.Decode(&v)
+
+	return
+}
+
+func (p *aliMNSDecoderErrResp) DecodeError(bodyBytes []byte, resource string) (decodedError error, err error) {
+	bodyReader := bytes.NewReader(bodyBytes)
+	errResp := &ErrorResponse{}
+	decoder := xml.NewDecoder(bodyReader)
+	err = decoder.Decode(errResp)
+	decodedError = *errResp
+
 	return
 }
