@@ -24,14 +24,15 @@ type AliMNSQueue interface {
 }
 
 type MNSQueue struct {
-	name    string
-	client  MNSClient
-	decoder MNSDecoder
-
-	qpsMonitor *QPSMonitor
+	name              string
+	client            MNSClient
+	decoder           MNSDecoder
+	newBatchOpDecoder BatchOpDecoderFactory
+	qpsMonitor        *QPSMonitor
 }
 
-func NewMNSQueue(name string, client MNSClient, qps ...int32) AliMNSQueue {
+func NewMNSQueueWithDecoders(name string, client MNSClient, decoder MNSDecoder,
+	newBatchOpDecoder BatchOpDecoderFactory, qps ...int32) AliMNSQueue {
 	if name == "" {
 		panic("ali_mns: queue name could not be empty")
 	}
@@ -39,14 +40,18 @@ func NewMNSQueue(name string, client MNSClient, qps ...int32) AliMNSQueue {
 	queue := new(MNSQueue)
 	queue.client = client
 	queue.name = name
-	queue.decoder = NewAliMNSDecoder()
-
+	queue.decoder = decoder
+	queue.newBatchOpDecoder = newBatchOpDecoder
 	qpsLimit := DefaultQueueQPSLimit
 	if qps != nil && len(qps) == 1 && qps[0] > 0 {
 		qpsLimit = qps[0]
 	}
 	queue.qpsMonitor = NewQPSMonitor(5, qpsLimit)
 	return queue
+}
+
+func NewMNSQueue(name string, client MNSClient, qps ...int32) AliMNSQueue {
+	return NewMNSQueueWithDecoders(name, client, NewAliMNSDecoder(), NewBatchOpDecoder, qps...)
 }
 
 func (p *MNSQueue) QPSMonitor() *QPSMonitor {
@@ -74,7 +79,7 @@ func (p *MNSQueue) BatchSendMessage(messages ...MessageSendRequest) (resp BatchM
 	}
 
 	p.qpsMonitor.checkQPS()
-	_, err = send(p.client, NewBatchOpDecoder(&resp), POST, nil, batchRequest, fmt.Sprintf("queues/%s/%s", p.name, "messages"), &resp)
+	_, err = send(p.client, p.newBatchOpDecoder(&resp), POST, nil, batchRequest, fmt.Sprintf("queues/%s/%s", p.name, "messages"), &resp)
 	return
 }
 
@@ -193,7 +198,7 @@ func (p *MNSQueue) BatchDeleteMessage(receiptHandles ...string) (resp BatchMessa
 	}
 
 	p.qpsMonitor.checkQPS()
-	_, err = send(p.client, NewBatchOpDecoder(&resp), DELETE, nil, handlers, fmt.Sprintf("queues/%s/%s", p.name, "messages"), nil)
+	_, err = send(p.client, p.newBatchOpDecoder(&resp), DELETE, nil, handlers, fmt.Sprintf("queues/%s/%s", p.name, "messages"), nil)
 
 	return
 }

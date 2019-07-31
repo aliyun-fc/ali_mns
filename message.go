@@ -3,6 +3,7 @@ package ali_mns
 import (
 	"encoding/json"
 	"encoding/xml"
+	"fmt"
 )
 
 type NotifyStrategyType string
@@ -39,6 +40,10 @@ type ErrorResponse struct {
 	Message   string   `xml:"Message,omitempty" json:"message,omitempty"`
 	RequestId string   `xml:"RequestId,omitempty" json:"request_id,omitempty"`
 	HostId    string   `xml:"HostId,omitempty" json:"host_id,omitempty"`
+}
+
+func (e ErrorResponse) Error() string {
+	return fmt.Sprintf("code: %s, message: %s, requestId: %s, hostId %s", e.Code, e.Message, e.RequestId, e.HostId)
 }
 
 type MessageSendRequest struct {
