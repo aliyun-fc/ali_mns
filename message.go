@@ -63,17 +63,20 @@ type MessagePublishRequest struct {
 type MessageAttributes struct {
 	XMLName          xml.Name          `xml:"MessageAttributes" json:"-"`
 	MailAttributes   *MailAttributes   `xml:"DirectMail,omitempty" json:"direct_mail,omitempty"`
+	SMSAttributes    *SMSAttributes    `xml:"DirectSMS,omitempty" json:"direct_sms,omitempty"`
 	ExtendAttributes *ExtendAttributes `xml:"ExtendAttributes,omitempty" json:"fc event,omitempty"`
 }
 
 type messageAttributesXML struct {
 	XMLName          xml.Name `xml:"MessageAttributes"`
 	MailAttributes   string   `xml:"DirectMail,omitempty"`
+	SMSAttributes    string   `xml:"DirectSMS,omitempty"`
 	ExtendAttributes string   `xml:"Extend,omitempty"`
 }
 
 func (m *MessageAttributes) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	mailAttributesStr := ""
+	smsAttributeStr := ""
 	extendAttributesStr := ""
 	if m.MailAttributes != nil {
 		mailAttributesByte, err := json.Marshal(m.MailAttributes)
@@ -81,6 +84,13 @@ func (m *MessageAttributes) MarshalXML(e *xml.Encoder, start xml.StartElement) e
 			return err
 		}
 		mailAttributesStr = string(mailAttributesByte)
+	}
+	if m.SMSAttributes != nil {
+		smsAttributesByte, err := json.Marshal(m.SMSAttributes)
+		if err != nil {
+			return err
+		}
+		smsAttributeStr = string(smsAttributesByte)
 	}
 	if m.ExtendAttributes != nil {
 		extendAttributesByte, err := json.Marshal(m.ExtendAttributes)
@@ -91,6 +101,7 @@ func (m *MessageAttributes) MarshalXML(e *xml.Encoder, start xml.StartElement) e
 	}
 	n := &messageAttributesXML{
 		MailAttributes:   mailAttributesStr,
+		SMSAttributes:    smsAttributeStr,
 		ExtendAttributes: extendAttributesStr,
 	}
 	return e.Encode(n)
@@ -117,6 +128,14 @@ func (m *MailAttributes) MarshalJSON() ([]byte, error) {
 		IsHtml: isHtml,
 		Alias:  (*Alias)(m),
 	})
+}
+
+type SMSAttributes struct {
+	FreeSignName string `json:"FreeSignName"`
+	TemplateCode string `json:"TemplateCode"`
+	Type         string `json:"Type"`
+	Receiver     string `json:"Receiver"`
+	SmsParams    string `json:"SmsParams"`
 }
 
 type ExtendAttributes struct {
