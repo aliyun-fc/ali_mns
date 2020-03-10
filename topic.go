@@ -50,6 +50,24 @@ func NewMNSTopic(name string, client MNSClient, qps ...int32) AliMNSTopic {
 	return topic
 }
 
+func NewMNSTopicWithDecoders(name string, client MNSClient, decoder MNSDecoder, qps ...int32) AliMNSTopic {
+	if name == "" {
+		panic("ali_mns: topic name could not be empty")
+	}
+
+	topic := new(MNSTopic)
+	topic.client = client
+	topic.name = name
+	topic.decoder = decoder
+
+	qpsLimit := DefaultTopicQPSLimit
+	if qps != nil && len(qps) == 1 && qps[0] > 0 {
+		qpsLimit = qps[0]
+	}
+	topic.qpsMonitor = NewQPSMonitor(5, qpsLimit)
+	return topic
+}
+
 func (p *MNSTopic) Name() string {
 	return p.name
 }
