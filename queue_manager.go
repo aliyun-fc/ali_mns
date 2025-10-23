@@ -10,7 +10,7 @@ import (
 )
 
 type AliQueueManager interface {
-    CreateSimpleQueue(queueName string) (err error)
+	CreateSimpleQueue(queueName string) (err error)
 	CreateQueue(queueName string, delaySeconds int32, maxMessageSize int32, messageRetentionPeriod int32, visibilityTimeout int32, pollingWaitSeconds int32, slices int32) (err error)
 	SetQueueAttributes(queueName string, delaySeconds int32, maxMessageSize int32, messageRetentionPeriod int32, visibilityTimeout int32, pollingWaitSeconds int32, slices int32) (err error)
 	GetQueueAttributes(queueName string) (attr QueueAttribute, err error)
@@ -40,7 +40,7 @@ func checkDelaySeconds(seconds int32) (err error) {
 }
 
 func checkMaxMessageSize(maxSize int32) (err error) {
-	if maxSize < 1024 || maxSize > 262144 {
+	if maxSize < 1024 || maxSize > 524288 {
 		err = ERR_MNS_MAX_MESSAGE_SIZE_RANGE_ERROR.New()
 		return
 	}
@@ -73,8 +73,8 @@ func checkPollingWaitSeconds(pollingWaitSeconds int32) (err error) {
 
 func NewMNSQueueManager(client MNSClient) AliQueueManager {
 	return &MNSQueueManager{
-		cli:         client,
-		decoder:     NewAliMNSDecoder(),
+		cli:     client,
+		decoder: NewAliMNSDecoder(),
 	}
 }
 
